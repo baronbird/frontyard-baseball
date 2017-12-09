@@ -7,7 +7,7 @@ var container;
 
 var camera, scene, renderer, loader, ball = null;
 
-var flag1 = false;
+var flag1 = false, flag2 = false;
 
 var bat, swinging, doneSwinging, downSwing;
 
@@ -154,13 +154,11 @@ function onClick() {
         ball.castShadow = true;
 	// ball.addEventListener('
 	// scene.add( ball );
-	flag1 = true;
+	// flag1 = true;
+	
+	flag2 = (ball.position.z > 200);
 	
 	console.log(ball.position.z);
-	if (ball.position.z > 200) {
-		ball.position.set(Math.random() * 2, 0.5, -5.0 + Math.random());
-	}
-	scene.add( ball );
 }
 
 function onMouseMove( event ) {
@@ -203,12 +201,14 @@ function animate() {
         }
     }
 	
-
-	if (flag1) {
-		flag1 = false;
-		ball.setLinearVelocity(new THREE.Vector3(0, 6, 40));
+    if (flag1) {
+	ball.setLinearVelocity(new THREE.Vector3(0, 10, 40));
+	flag1 = false;
+	if (ball.position.z > 200) {
+		ball.position.set(Math.random() * 2, 0.5, -5.0 + Math.random());
 	}
-		render();
+    }
+    render();
 }
 
 function render() {
