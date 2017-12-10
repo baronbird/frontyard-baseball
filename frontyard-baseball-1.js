@@ -5,9 +5,9 @@ Physijs.scripts.ammo = 'js/ammo.js';
 
 var container;
 
-var camera, scene, renderer, loader, ball = null;
+var camera, scene, renderer, loader, ball = null, materialBall, batBox, batBoxTexture;
 
-var flag1 = false, flag2 = false, reset = true;
+var flag1 = false, flag2 = false, reset = true, startcheck;
 
 var bat, swinging, doneSwinging, downSwing;
 
@@ -112,6 +112,27 @@ window.onload = function init() {
 
 		});
 
+		batBoxTexture = new Physijs.createMaterial( new THREE.MeshLambertMaterial({map: loader.load( 'textures/bbbat.jpg') }), 0.5, 0.2);
+		batBoxTexture.map.wrapT = batBoxTexture.map.wrapT = THREE.RepeatWrapping;
+		batBoxTexture.map.repeat.set(1, 1);
+		batBox = new Physijs.BoxMesh( new THREE.BoxGeometry(0.18, 0.1, 1.5), batBoxTexture, 0);
+		batBox.position.x = -1;
+		batBox.position.y = 0.25;
+		batBox.position.z = 21;
+		batBox.rotation.z = Math.PI * -1.0/3.0;
+		batBox.rotation.y = Math.PI * -5.0/6.0;
+		batBox.__dirtyPosition = true;
+
+		batBox.addEventListener( 'collision', function(object) {
+			console.log(object);
+			var force = new THREE.Vector3(0, 40, 60);
+			object.applyCentralImpulse( force );
+		});
+
+		scene.add(batBox);
+
+
+
 		renderer = new THREE.WebGLRenderer({antialias:true});
 		renderer.setPixelRatio(window.devicePixelRatio);
 		renderer.setSize(window.innerWidth, window.innerHeight);
@@ -121,7 +142,7 @@ window.onload = function init() {
 		document.addEventListener('mousedown', onClick);
 		document.addEventListener('mousemove', onMouseMove, false);
 
-	var materialBall;
+	//var materialBall;
 	materialBall = Physijs.createMaterial( new THREE.MeshLambertMaterial( { map: loader.load( 'textures/baseball.jpg' ) }), 0.6, 0.3);
 	materialBall.map.wrapS = materialBall.map.wrapT = THREE.RepeatWrapping;
 	materialBall.map.repeat.set(3, 3);
@@ -130,6 +151,13 @@ window.onload = function init() {
 	ball.position.set(Math.random() / 4.0 - 0.25, Math.random() / 4.0 - 0.25, -5.0);
 				ball.castShadow = true;
 	ball.__dirtyPosition = true;
+
+	ball.setCcdMotionThreshold(1);
+
+	ball.addEventListener( 'collision', function(object) {
+		console.log("Henlo222");
+
+	});
 	// ball.setLinearVelocity(new THREE.Vector3(0, 100, 20));
 	// ball.addEventListener('
 	scene.add( ball );
@@ -144,12 +172,12 @@ function onClick() {
 				swinging = true;
 				downSwing = true;
 	}
-	var materialBall;
+	//var materialBall;
 	materialBall = Physijs.createMaterial( new THREE.MeshLambertMaterial( { map: loader.load( 'textures/baseball.jpg' ) }), 0.6, 0.3);
 	materialBall.map.wrapS = materialBall.map.wrapT = THREE.RepeatWrapping;
 	materialBall.map.repeat.set(3, 3);
 
-	if (ball.position.z > 100) {
+	/*if (ball.position.z > 100) {
 		if (reset) {
 			scene.remove(ball);
 			ball = new Physijs.SphereMesh( new THREE.SphereGeometry(0.2, 16, 16), materialBall, 1);
@@ -162,10 +190,10 @@ function onClick() {
 			reset = false;
 		}
 	}
+	*/
 
 	//console.log(ball.position);
-
-	flag1 = false;
+	flag1 = true;
 
 	if (flag2) {
 		flag1 = true;
@@ -179,8 +207,10 @@ function onMouseMove( event ) {
 				bat.position.x = 4 * (( event.clientX ) / window.innerWidth) - 2.75;
 				bat.position.y = -2 * (( event.clientY ) / window.innerHeight) + 1;
 
+				batBox.position.set(bat.position.x, bat.position.y, bat.position.z);
+				batBox.setLinearVelocity(new THREE.Vector3(0, 0, 0));
 				//console.log(bat.position.x + " " + bat.position.y);
-
+				scene.simulate();
 		}
 }
 
@@ -191,12 +221,17 @@ function animate() {
 				if(bat.rotation.y < Math.PI * 3.0/6.0) {
 						if(downSwing && bat.rotation.z > Math.PI * -2.0/3.0) {
 								bat.rotation.z -= Math.PI * 1.0/36.0;
+								batBox.rotation.z = -bat.rotation.z;
 						}
 						else {
 								downSwing = false;
 								bat.rotation.z += Math.PI * 1.0/36.0;
+								//batBox.rotation.z += Math.PI * 1.0/36.0;
+								batBox.rotation.z = -bat.rotation.z;
 						}
 						bat.rotation.y += Math.PI * 1.0/18.0;
+						//batBox.rotation.y += Math.PI * 1.0/18.0;
+						batBox.rotation.y = -bat.rotation.y;
 				}
 				else {
 						swinging = false;
@@ -207,10 +242,14 @@ function animate() {
 		if(doneSwinging) {
 				if(bat.rotation.y > Math.PI * -5.0/6.0) {
 						bat.rotation.y -= Math.PI * 1.0/30.0;
+						//batBox.rotation.y -= Math.PI * 1.0/30.0;
+						batBox.rotation.y = -bat.rotation.y;
 				}
 				else {
 						doneSwinging = false;
-						bat.rotation.z = Math.PI * -1.0/3.0
+						bat.rotation.z = Math.PI * -1.0/3.0;
+						//batBox.rotation.z = Math.PI * -1.0/3.0;
+						batBox.rotation.z = -bat.rotation.z;
 				}
 		}
 
@@ -218,31 +257,70 @@ function animate() {
 		render();
 }
 
-function render() {
+function addNewBall() {
 
-	//console.log(flag1, flag2, "flags");
-	if (flag1) {
-		// ball.setLinearVelocity(new THREE.Vector3(0, 0, 0));
-		if (flag2) {
+	if (ball.position.z == -5){
+		ball.setLinearVelocity(new THREE.Vector3(0, 10, 10));
+	}
+
+	if (ball.position.y < -250 && ball.position.z > 0) {
 				//console.log(ball.position);
 				//ball.position.set(Math.random() * 2, 0.5, -5.0 + Math.random());
 				//ball.position.y = 0.5;
 				//ball.position.z = -5.0;
-				//console.log(ball.position);
-				if (ball.position.z > 100){
+				console.log(ball.position.y, ball.position.z);
+				if (ball.position.y < -50){
+					console.log(ball.position.z);
 					reset = true;
-				}
-		}
-		ball.setLinearVelocity(new THREE.Vector3(0, 10, 40));
-		flag1 = false;
-	}
+					if (reset) {
+						scene.remove(ball);
+						ball = new Physijs.SphereMesh( new THREE.SphereGeometry(0.2, 16, 16), materialBall, 1);
+						ball.__dirtyPosition = true;
+						ball.position.set(Math.random() / 4.0 - 0.25, Math.random() / 4.0 - 0.25, -5.0);
 
-		if (ball.getLinearVelocity().z < 0) {
+						ball.setCcdMotionThreshold(1);
+
+						ball.addEventListener( 'collision', function(object) {
+							console.log("Henlo");
+							var force = new THREE.Vector3(0, 40, 60);
+							object.applyCentralImpulse( force );
+						});
+
+						scene.add( ball );
+						ball.setLinearVelocity(new THREE.Vector3(0, 10, 5));
+						ball.castShadow = true;
+
+						flag2 = true;
+						reset = false;
+						flag1 = true;
+					}
+		}
+		console.log(ball.position.z);
+
+		if (ball.position.z < 0 && flag1){
+			if (bat.position.z < ball.position.z)
+			{
+				ball.setLinearVelocity(new THREE.Vector3(0, 10, 10));
+			}
+
+			flag1 = false;
+		}
+	}
+}
+
+function render() {
+
+	//console.log(flag1, flag2, "flags");
+	// ball.setLinearVelocity(new THREE.Vector3(0, 0, 0));
+		addNewBall();
+
+		if (ball.getLinearVelocity().z > 0) {
 			//console.log(ball.getLinearVelocity().z, "HERE");
 			camera.lookAt(ball.position);
 		}
 		else {
 			camera.lookAt(scene.position);
 		}
+		batBox.position.set(bat.position.x, bat.position.y, bat.position.z);
 		renderer.render(scene, camera);
 }
