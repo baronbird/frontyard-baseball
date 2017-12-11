@@ -41,7 +41,7 @@ window.onload = function init() {
 
 	loader = new THREE.TextureLoader();
 
-		var fieldMaterial = Physijs.createMaterial(new THREE.MeshLambertMaterial({map: loader.load( 'textures/field.png' ) }), 0.5, 0.2);
+		var fieldMaterial = Physijs.createMaterial(new THREE.MeshLambertMaterial({map: loader.load( 'textures/field.png' )}), 0.5, 0.2);
 	fieldMaterial.map.wrapS = fieldMaterial.map.wrapT = THREE.RepeatWrapping;
 	fieldMaterial.map.repeat.set(3, 3);
 
@@ -54,10 +54,13 @@ window.onload = function init() {
 		floorMesh.receiveShadow = true;
 		scene.add(floorMesh);
 
-		var wallMaterial = new Physijs.createMaterial( new THREE.MeshLambertMaterial({map: loader.load( 'textures/fence.png') }), 0.5, 0.2);
-		var wallMesh1 = new Physijs.BoxMesh( new THREE.BoxGeometry(96,1,12), wallMaterial, 0);
-		var wallMesh2 = new Physijs.BoxMesh( new THREE.BoxGeometry(96,1,12), wallMaterial, 0);
-		var wallMesh3 = new Physijs.BoxMesh( new THREE.BoxGeometry(96,1,12), wallMaterial, 0);
+		var wallMaterial = Physijs.createMaterial( new THREE.MeshLambertMaterial({map: loader.load( 'textures/fence.png'), transparent: true}), 0.5, 0.2);
+		wallMaterial.map.wrapS = THREE.RepeatWrapping;
+		wallMaterial.map.wrapT = THREE.RepeatWrapping;
+		wallMaterial.map.repeat.set( 10, 1 );
+		var wallMesh1 = new Physijs.BoxMesh( new THREE.BoxGeometry(80,10,0.1), wallMaterial, 0);
+		var wallMesh2 = new Physijs.BoxMesh( new THREE.BoxGeometry(60,10,10), wallMaterial, 0);
+		var wallMesh3 = new Physijs.BoxMesh( new THREE.BoxGeometry(60,10,12), wallMaterial, 0);
 
 		wallMesh1.position.z -= 60;
 	wallMesh1.position.y -= 0.6;
@@ -74,6 +77,17 @@ window.onload = function init() {
 		wallMesh3.rotation.y -= Math.PI * 1.0 / 3.0;
 	wallMesh3.position.y -= 0.6;
 		scene.add(wallMesh3);
+
+
+		var hudMaterial = new Physijs.createMaterial( new THREE.MeshLambertMaterial({map: loader.load( 'textures/hud.png'), transparent: true, opacity: 0.5}), 0.5, 0.2);
+		var hudMesh1 = new Physijs.BoxMesh( new THREE.BoxGeometry(1,1,0.5), hudMaterial, 0);
+		hudMesh1.addEventListener( 'collision', function(object) {
+			var force = new THREE.Vector3(Math.random(), 40, -60 * Math.abs(Math.random()) - 3);
+			object.applyCentralImpulse( force );
+		});
+		hudMesh1.position.z = 21;
+		scene.add(hudMesh1);
+
 
 		var onProgress = function (xhr) {
 				if (xhr.lengthComputable) {
@@ -259,18 +273,18 @@ function animate() {
 
 function addNewBall() {
 
-	if (ball.position.z == -5){
-		ball.setLinearVelocity(new THREE.Vector3(0, 10, 10));
+	if (ball.position.z == -5 && ball.getLinearVelocity().z >= 0){
+		ball.setLinearVelocity(new THREE.Vector3(0, 10, 40));
 	}
 
-	if (ball.position.y < -250 && ball.position.z > 0) {
+	if ( (ball.position.y < -250 && (ball.position.z > 0 || ball.position.z < -5)) || (Math.abs(ball.getLinearVelocity().z) < 2) && (ball.position.y < 1)) {
 				//console.log(ball.position);
 				//ball.position.set(Math.random() * 2, 0.5, -5.0 + Math.random());
 				//ball.position.y = 0.5;
 				//ball.position.z = -5.0;
-				console.log(ball.position.y, ball.position.z);
-				if (ball.position.y < -50){
-					console.log(ball.position.z);
+				//console.log(ball.position.y, ball.position.z);
+				if (ball.position.y < -50 || Math.abs(ball.getLinearVelocity().z) < 5){
+					//console.log(ball.position.z);
 					reset = true;
 					if (reset) {
 						scene.remove(ball);
@@ -280,14 +294,15 @@ function addNewBall() {
 
 						ball.setCcdMotionThreshold(1);
 
+						/*
 						ball.addEventListener( 'collision', function(object) {
-							console.log("Henlo");
+							//console.log("Henlo");
 							var force = new THREE.Vector3(0, 40, 60);
 							object.applyCentralImpulse( force );
-						});
+						});*/
 
 						scene.add( ball );
-						ball.setLinearVelocity(new THREE.Vector3(0, 10, 5));
+						ball.setLinearVelocity(new THREE.Vector3(0, 10, 40));
 						ball.castShadow = true;
 
 						flag2 = true;
@@ -314,7 +329,7 @@ function render() {
 	// ball.setLinearVelocity(new THREE.Vector3(0, 0, 0));
 		addNewBall();
 
-		if (ball.getLinearVelocity().z > 0) {
+		if (ball.getLinearVelocity().z < 0) {
 			//console.log(ball.getLinearVelocity().z, "HERE");
 			camera.lookAt(ball.position);
 		}
