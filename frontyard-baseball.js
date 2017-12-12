@@ -1,10 +1,11 @@
 "use strict"
 
 var container;
+var raycaster;
 
 // three.js
 var camera, scene, renderer, loader;
-var fakeBatMesh, batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit, hudMesh, targetMesh;
+var batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit, hudMesh, targetMesh;
 var tracker, num = 0;
 
 
@@ -66,13 +67,7 @@ window.onload = function init() {
     scene.add(fieldMesh);
 
     // create the three outfield walls
-    var wallMaterial = new THREE.MeshLambertMaterial({color: 0x444488});
-    /*var wallMaterial = new THREE.MeshLambertMaterial({ map: loader.load('textures/fence.jpg', function(texture) {
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-      texture.offset.set( 100, 100 );
-      texture.repeat.set( 5, 1 );
-    })
-  });*/
+    var wallMaterial = new THREE.MeshLambertMaterial({color: 0x222266});
     var wallGeometry = new THREE.PlaneBufferGeometry(96,12);
 
     var wallShape = new CANNON.Plane();
@@ -98,35 +93,33 @@ window.onload = function init() {
     wallMesh3.rotation.y -= Math.PI * 1.0 / 3.0;
     scene.add(wallMesh3);
 
+
     // add bat
-    // var mtlLoader = new THREE.MTLLoader();
-    // mtlLoader.setPath('obj/bat/');
-    // mtlLoader.load('DolHomeRunBat.mtl', function(materials) {
-        // materials.preload();
+    var objLoader = new THREE.OBJLoader();
+    objLoader.load('obj/bat/baseball_bat.obj', function(object) {
+        var scale = 10.0;
 
-        var batMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, opacity: 0.1});
+        var batMaterial = new THREE.MeshPhongMaterial({color: 0xccaa55});
 
-        var objLoader = new THREE.OBJLoader();
-        // objLoader.setMaterials(batMaterial);
-        objLoader.load('obj/bat/baseball_bat.obj', function(object) {
-
-            var scale = 10.0;
-
-            object.position.y = 0.25;
-            object.position.z = 21;
-            object.position.x = -1;
-            object.scale.divideScalar(scale);
-            object.rotation.z = Math.PI * -1.0/6.0;
-            object.rotation.y = Math.PI * -2.0/3.0;
-
-            // add to scene
-            batMesh = object;
-            batMesh.scale.set(0.25,0.175,0.25);
-            scene.add(object);
-
+        object.traverse(function(child) {
+            if(child instanceof THREE.Mesh) {
+                child.material = batMaterial
+            };
         });
 
-    // });
+        object.position.y = 0.25;
+        object.position.z = 21;
+        object.position.x = -1;
+        object.scale.divideScalar(scale);
+        object.rotation.z = Math.PI * -1.0/6.0;
+        object.rotation.y = Math.PI * -2.0/3.0;
+
+        // add to scene
+        batMesh = object;
+        batMesh.scale.set(0.25,0.175,0.25);
+        scene.add(object);
+
+    });
 
     var batShape = new CANNON.Cylinder(0.1,0.1,0.75,30);
     bat = new CANNON.Body({mass: 0});
@@ -137,16 +130,11 @@ window.onload = function init() {
     bat.collisionResponse = 0;
     world.addBody(bat);
 
-    var batGeometry = new THREE.SphereGeometry(0.1);
-    fakeBatMesh = new THREE.Mesh( batGeometry, batMaterial );
-    fakeBatMesh.rotation.set(0,0,Math.PI * -0.5);
-    scene.add(fakeBatMesh);
-
     bat.addEventListener("collide", function(e) {
         if(e.body = ball && canHit) {
             ball.velocity.x = (ball.position.z - bat.position.z) * 50;
             ball.velocity.y = (ball.position.y - bat.position.y) * 100;
-            ball.velocity.z = Math.cos(Math.PI * (ball.position.x - bat.position.x)) * -75;
+            ball.velocity.z = Math.cos(Math.PI*(ball.position.x-bat.position.x))*-75;
         }
     });
 
@@ -169,13 +157,19 @@ window.onload = function init() {
     scene.add(ballMesh);
 
     var hudGeometry = new THREE.BoxGeometry(1, 1, 0.1);
-    var hudMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/hud.png'), transparent: true, opacity: 0.5});
+    var hudMaterial = new THREE.MeshLambertMaterial({
+        map: loader.load('textures/hud.png'),
+        transparent: true,
+        opacity: 0.5 });
     hudMesh = new THREE.Mesh( hudGeometry, hudMaterial );
     hudMesh.position.z = 21.4;
     scene.add(hudMesh);
 
-    var targetGeometry = new THREE.BoxGeometry(0.33, 0.33, 0.02);
-    var targetMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/target.png'), transparent: true, opacity: 0.4});
+    var targetGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.02);
+    var targetMaterial = new THREE.MeshLambertMaterial({
+        map: loader.load('textures/target.png'),
+        transparent: true,
+        opacity: 0.6 });
     targetMesh = new THREE.Mesh( targetGeometry, targetMaterial );
     targetMesh.position.z = 21.5;
     scene.add(targetMesh);
@@ -186,9 +180,13 @@ window.onload = function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
+    // create raycaster
+    raycaster = new THREE.Raycaster();
+
     // add event listeners
     document.addEventListener('mousedown', onClick);
     document.addEventListener('mousemove', onMouseMove, false);
+    document.addEventListener('resize', onWindowResize, false);
 
     animate();
 }
@@ -223,29 +221,38 @@ function onClick() {
 }
 
 function onMouseMove( event ) {
-    if(!doneSwinging && !swinging) {
-        batMesh.position.x = 4 * (( event.clientX ) / window.innerWidth) - 3.125;
-        batMesh.position.y = -2 * (( event.clientY ) / window.innerHeight) + 1;
+    var mouse = new THREE.Vector2();
 
-        targetMesh.position.x = 4 * (( event.clientX ) / window.innerWidth) - 2;
-        targetMesh.position.y = bat.position.y;
+    if(!swinging) {
+        mouse.x = (event.clientX/renderer.domElement.clientWidth)*2-1;
+        mouse.y = (event.clientY/renderer.domElement.clientHeight)*-2+1;
+        raycaster.setFromCamera(mouse,camera);
+
+        var intersects = raycaster.intersectObject(hudMesh);
+
+        if(intersects.length > 0) {
+            targetMesh.position.copy(intersects[0].point);
+        }
     }
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    if (Math.abs(ballMesh.position.z - targetMesh.position.z) < 2)
-    {
-      world.step(1.0/300.0);
-    }
-    else{
-      world.step(1.0/60.0);
-    }
+    world.step(1.0/60.0);
 
     ballMesh.position.copy(ball.position);
-    bat.position.set(batMesh.position.x + 1.1125, batMesh.position.y - .05, batMesh.position.z);
-
-    fakeBatMesh.position.copy(bat.position);
+    bat.position.copy(targetMesh.position);
+    bat.position.y -= 0.1;
+    batMesh.position.set(bat.position.x - 1.1125,
+            bat.position.y + 0.05,
+            bat.position.z);
 
     if(swinging) {
         if(batMesh.rotation.y < Math.PI * 3.0/6.0) {
@@ -257,8 +264,8 @@ function animate() {
                 batMesh.rotation.z += Math.PI * 1.0/30.0;
             }
             batMesh.rotation.y += Math.PI * 1.0/18.0;
-            if(batMesh.rotation.y < Math.PI * 1.0/6.0
-                    && batMesh.rotation.y > Math.PI * -1.0/6.0) {
+            if(batMesh.rotation.y < Math.PI * 1.0/3.0
+                    && batMesh.rotation.y > Math.PI * -1.0/3.0) {
                 canHit = true;
             }
             else {
