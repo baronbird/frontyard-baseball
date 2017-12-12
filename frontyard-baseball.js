@@ -341,7 +341,7 @@ function startGame() {
 
             if (ball.position.z < -64) {
                 num++;
-                highScore++;
+                //highScore++;
             }
 
             if (pCount >= 20) {
