@@ -3,8 +3,10 @@
 var container;
 
 // three.js
-var camera, scene, renderer;
-var fakeBatMesh, batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit;
+var camera, scene, renderer, loader;
+var fakeBatMesh, batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit, hudMesh, targetMesh;
+var tracker, num = 0;
+
 
 // cannon.js
 var world, ball, bat, batter, walls = [];
@@ -18,6 +20,13 @@ window.onload = function init() {
     // create container for canvas
     container = document.createElement('div');
     document.body.appendChild(container);
+
+    tracker = document.createElement('p');
+    tracker.setAttribute("style", "position: absolute; left: 0; top: 0; z-index: 1; font-size: 30pt;");
+    tracker.innerHTML = "Home runs: " + num.toString();
+    container.appendChild(tracker);
+
+    loader = new THREE.TextureLoader();
 
     // create camera
     camera = new THREE.PerspectiveCamera(45,
@@ -37,7 +46,7 @@ window.onload = function init() {
     scene.add(directionalLight);
 
     // create field
-    
+
     // CANNON
     var fieldShape = new CANNON.Plane();
     var fieldBody = new CANNON.Body({ mass: 0 });
@@ -47,7 +56,7 @@ window.onload = function init() {
     world.addBody(fieldBody);
 
     // THREE
-    var fieldMaterial = new THREE.MeshLambertMaterial({color: 0x33aa55,
+    var fieldMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/field.png'),
         side: THREE.DoubleSide });
     var fieldGeometry = new THREE.PlaneBufferGeometry(96,96);
     var fieldMesh = new THREE.Mesh(fieldGeometry,fieldMaterial);
@@ -58,8 +67,14 @@ window.onload = function init() {
 
     // create the three outfield walls
     var wallMaterial = new THREE.MeshLambertMaterial({color: 0x444488});
+    /*var wallMaterial = new THREE.MeshLambertMaterial({ map: loader.load('textures/fence.jpg', function(texture) {
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      texture.offset.set( 100, 100 );
+      texture.repeat.set( 5, 1 );
+    })
+  });*/
     var wallGeometry = new THREE.PlaneBufferGeometry(96,12);
-    
+
     var wallShape = new CANNON.Plane();
     var wallBody = new CANNON.Body({ mass: 0 });
     fieldBody.addShape(wallShape);
@@ -96,7 +111,7 @@ window.onload = function init() {
         objLoader.load('obj/bat/baseball_bat.obj', function(object) {
 
             var scale = 10.0;
-            
+
             object.position.y = 0.25;
             object.position.z = 21;
             object.position.x = -1;
@@ -112,7 +127,7 @@ window.onload = function init() {
         });
 
     // });
-    
+
     var batShape = new CANNON.Cylinder(0.1,0.1,0.75,30);
     bat = new CANNON.Body({mass: 0});
     bat.addShape(batShape);
@@ -134,7 +149,7 @@ window.onload = function init() {
             ball.velocity.z = Math.cos(Math.PI * (ball.position.x - bat.position.x)) * -75;
         }
     });
-    
+
 
 
     // add ball
@@ -153,6 +168,18 @@ window.onload = function init() {
     world.addBody(ball);
     scene.add(ballMesh);
 
+    var hudGeometry = new THREE.BoxGeometry(1, 1, 0.1);
+    var hudMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/hud.png'), transparent: true, opacity: 0.5});
+    hudMesh = new THREE.Mesh( hudGeometry, hudMaterial );
+    hudMesh.position.z = 21.4;
+    scene.add(hudMesh);
+
+    var targetGeometry = new THREE.BoxGeometry(0.33, 0.33, 0.02);
+    var targetMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/target.png'), transparent: true, opacity: 0.4});
+    targetMesh = new THREE.Mesh( targetGeometry, targetMaterial );
+    targetMesh.position.z = 21.5;
+    scene.add(targetMesh);
+
     // create renderer
     renderer = new THREE.WebGLRenderer();
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -162,8 +189,8 @@ window.onload = function init() {
     // add event listeners
     document.addEventListener('mousedown', onClick);
     document.addEventListener('mousemove', onMouseMove, false);
-    
-    animate();    
+
+    animate();
 }
 
 function initCannon() {
@@ -199,12 +226,21 @@ function onMouseMove( event ) {
     if(!doneSwinging && !swinging) {
         batMesh.position.x = 4 * (( event.clientX ) / window.innerWidth) - 3.125;
         batMesh.position.y = -2 * (( event.clientY ) / window.innerHeight) + 1;
+
+        targetMesh.position.x = 4 * (( event.clientX ) / window.innerWidth) - 2;
+        targetMesh.position.y = bat.position.y;
     }
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    world.step(1.0/60.0);
+    if (Math.abs(ballMesh.position.z - targetMesh.position.z) < 2)
+    {
+      world.step(1.0/300.0);
+    }
+    else{
+      world.step(1.0/60.0);
+    }
 
     ballMesh.position.copy(ball.position);
     bat.position.set(batMesh.position.x + 1.1125, batMesh.position.y - .05, batMesh.position.z);
@@ -243,6 +279,11 @@ function animate() {
             doneSwinging = false;
             batMesh.rotation.z = Math.PI * -1.0/6.0
         }
+    }
+
+    if (ballMesh.position.z < -64 && ballMesh.position.y > 8) {
+      num = 1;
+      tracker.innerHTML = "Home runs: " + num.toString();
     }
 
     render();
