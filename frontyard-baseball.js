@@ -4,15 +4,16 @@ var container;
 
 // three.js
 var camera, scene, renderer;
-var fakeBatMesh, batMesh, ballMesh, swinging, doneSwinging, downSwing;
+var fakeBatMesh, batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit;
 
 // cannon.js
-var world, ball, bat, walls = [];
+var world, ball, bat, batter, walls = [];
 
 window.onload = function init() {
     initCannon();
 
     swinging = false;
+    canHit = false;
 
     // create container for canvas
     container = document.createElement('div');
@@ -88,7 +89,7 @@ window.onload = function init() {
     // mtlLoader.load('DolHomeRunBat.mtl', function(materials) {
         // materials.preload();
 
-        var batMaterial = new THREE.MeshPhongMaterial({color: 0xcc8844});
+        var batMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, opacity: 0.1});
 
         var objLoader = new THREE.OBJLoader();
         // objLoader.setMaterials(batMaterial);
@@ -111,24 +112,26 @@ window.onload = function init() {
         });
 
     // });
-
-    var batShape = new CANNON.Cylinder(0.3,0.3,0.5,30);
-    bat = new CANNON.Body({mass: 100});
+    
+    var batShape = new CANNON.Cylinder(0.1,0.1,0.75,30);
+    bat = new CANNON.Body({mass: 0});
     bat.addShape(batShape);
     bat.velocity.set(0,7.5,-21);
-    bat.position.set(0,0.125,45);
+    bat.position.set(0,0.125,21);
     bat.quaternion.setFromAxisAngle(new CANNON.Vec3(0,0,1), Math.PI * -0.5);
+    bat.collisionResponse = 0;
     world.addBody(bat);
 
-    var batGeometry = new THREE.CylinderGeometry(0.3,0.3,0.5,30);
+    var batGeometry = new THREE.SphereGeometry(0.1);
     fakeBatMesh = new THREE.Mesh( batGeometry, batMaterial );
     fakeBatMesh.rotation.set(0,0,Math.PI * -0.5);
     scene.add(fakeBatMesh);
 
     bat.addEventListener("collide", function(e) {
-        if(e.body = ball) {
-            ball.velocity.z = -100;
-            ball.velocity.y = 10;
+        if(e.body = ball && canHit) {
+            ball.velocity.x = (ball.position.z - bat.position.z) * 50;
+            ball.velocity.y = (ball.position.y - bat.position.y) * 100;
+            ball.velocity.z = Math.cos(Math.PI * (ball.position.x - bat.position.x)) * -75;
         }
     });
     
@@ -137,10 +140,10 @@ window.onload = function init() {
     // add ball
 
     // CANNON
-    var ballShape = new CANNON.Sphere(0.2);
+    var ballShape = new CANNON.Sphere(0.075);
     ball = new CANNON.Body({ mass: 0.001 });
     ball.addShape(ballShape);
-    ball.velocity.set(0,5,23);
+    ball.velocity.set(0,5,22);
     ball.position.set(0, 3, -10);
 
     // THREE
@@ -204,6 +207,8 @@ function animate() {
     world.step(1.0/60.0);
 
     ballMesh.position.copy(ball.position);
+    bat.position.set(batMesh.position.x + 1.1125, batMesh.position.y - .05, batMesh.position.z);
+
     fakeBatMesh.position.copy(bat.position);
 
     if(swinging) {
@@ -216,6 +221,13 @@ function animate() {
                 batMesh.rotation.z += Math.PI * 1.0/30.0;
             }
             batMesh.rotation.y += Math.PI * 1.0/18.0;
+            if(batMesh.rotation.y < Math.PI * 1.0/6.0
+                    && batMesh.rotation.y > Math.PI * -1.0/6.0) {
+                canHit = true;
+            }
+            else {
+                canHit = false;
+            }
         }
         else {
             swinging = false;
