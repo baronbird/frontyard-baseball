@@ -6,7 +6,9 @@ var raycaster;
 // three.js
 var camera, scene, renderer, loader;
 var batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit, hudMesh, targetMesh;
-var tracker, num = 0, devMesh, menuBool, startMesh, howMesh, skip = false;
+var tracker, num = 0, devMesh, menuBool, startMesh, howMesh, skip = false, howBool = false, help, helpMesh;
+var playingGame = false, pCount = 0;
+var highScore = 0, hScore;
 
 
 // cannon.js
@@ -27,6 +29,13 @@ window.onload = function init() {
     tracker.setAttribute("style", "position: absolute; left: 0; top: 0; z-index: 1; font-size: 30pt;");
     tracker.innerHTML = "Home runs: " + num.toString();
     container.appendChild(tracker);
+
+    hScore = document.createElement('p');
+    hScore.setAttribute("style", "position: absolute; right: 0; top: -200; z-index: 1; font-size: 30pt;");
+    hScore.innerHTML = "High Score: " + highScore.toString();
+    container.appendChild(hScore);
+
+
 
     loader = new THREE.TextureLoader();
 
@@ -132,7 +141,7 @@ window.onload = function init() {
     world.addBody(bat);
 
     bat.addEventListener("collide", function(e) {
-        console.log(e);
+        //console.log(e);
         if (e.body == ball && canHit) {
             ball.velocity.x = (ball.position.z - bat.position.z) * 50;
             ball.velocity.y = (ball.position.y - bat.position.y) * 100;
@@ -140,16 +149,16 @@ window.onload = function init() {
         }
 
         if (e.body == start) {
-            start.velocity.x = (start.position.z - bat.position.z) * 50;
-            start.velocity.y = (start.position.y - bat.position.y) * 100;
-            start.velocity.z = Math.cos(Math.PI*(start.position.x-bat.position.x))*-75;
-            menuBool = false;
+            //start.velocity.x = (start.position.z - bat.position.z) * 50;
+            //start.velocity.y = (start.position.y - bat.position.y) * 100;
+            //start.velocity.z = Math.cos(Math.PI*(start.position.x-bat.position.x))*-75;
+            //menuBool = false;
         }
         if (e.body == how) {
-            how.velocity.x = (how.position.z - bat.position.z) * 50;
-            how.velocity.y = (how.position.y - bat.position.y) * 100;
-            how.velocity.z = Math.cos(Math.PI*(how.position.x-bat.position.x))*-75;
-            menuBool = false;
+            //how.velocity.x = (how.position.z - bat.position.z) * 50;
+            //how.velocity.y = (how.position.y - bat.position.y) * 100;
+            //how.velocity.z = Math.cos(Math.PI*(how.position.x-bat.position.x))*-75;
+            //menuBool = false;
         }
     });
 
@@ -192,6 +201,20 @@ window.onload = function init() {
     targetMesh.position.z = 21.5;
     scene.add(targetMesh);
 
+
+    var helpGeometry = new THREE.BoxGeometry(2.20, 1.25, 0.1);
+    var helpMaterial = new THREE.MeshLambertMaterial({
+        map: loader.load('textures/help.png'),
+        transparent: true,
+        opacity: 0.5 });
+    helpMesh = new THREE.Mesh( helpGeometry, helpMaterial );
+    helpMesh.position.z = 22.0;
+    helpMesh.collisionResponse = 0;
+    //scene.add(helpMesh);
+
+
+
+
     var devGeometry = new THREE.BoxGeometry(2, 0.5, 0.001);
     var devMaterial = new THREE.MeshLambertMaterial({map: loader.load('textures/dev-info.png'), transparent: true, opacity: 0.9});
     devMesh = new THREE.Mesh( devGeometry, devMaterial );
@@ -206,7 +229,7 @@ window.onload = function init() {
     start.velocity.set(0,0,0);
     //start.rotation.z = Math.PI * Math.random()/2 - 0.25;
     start.velocity.set(0,0,0);
-    start.position.set(0, 2, 20);
+    start.position.set(0, 2, 20.6);
     //world.add(start);
 
     var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
@@ -223,7 +246,7 @@ window.onload = function init() {
     how.velocity.set(0,0,0);
     //how.quaternion.setFromAxisAngle(new CANNON.Vec3(0,0,1), Math.PI * Math.random()/2 - 0.25);
     how.velocity.set(0,0,0);
-    how.position.set(0, 0.5, 20);
+    how.position.set(0, 0.5, 20.6);
     //world.add(how);
 
     var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
@@ -246,21 +269,45 @@ window.onload = function init() {
     document.addEventListener('mousedown', onClick);
     document.addEventListener('mousemove', onMouseMove, false);
     document.addEventListener('resize', onWindowResize, false);
+    document.addEventListener('onkeydown', getPress);
 
     animate();
 }
 
+function getPress(event) {
+    console.log(event);
+    var charC = ('which' in event) ? event.charCode : event.keyCode;
+    console.log(charC);
+    if (charC == 82 || 114) {
+        if (howBool) {
+            howBool = false;
+            menuBool = true;
+        }
+    }
+}
+
 function startGame() {
 
-    if (!skip && !menuBool) {
+    if (!howBool) {
+        if (helpMesh) {
+            scene.remove(helpMesh);
+        }
+    }
+
+    if (menuBool) {
+        scene.add(startMesh);
+        scene.add(howMesh);
+    }
+
+    if (!skip && !menuBool && !howBool) {
       world.addBody(ball);
       scene.add(ballMesh);
 
-      if (!menuBool && !ball) {
+      if (!menuBool) {
         var ballShape = new CANNON.Sphere(0.075);
         ball = new CANNON.Body({ mass: 0.001 });
         ball.addShape(ballShape);
-        ball.velocity.set(0,5,22);
+        ball.velocity.set(Math.random()/4.0 - 0.125,5 + Math.random()/3.0,22);
         ball.position.set(0, 3, -10);
 
         // THREE
@@ -272,6 +319,73 @@ function startGame() {
       }
 
       skip = true;
+      playingGame = true;
+    }
+
+    if (howBool) {
+        if (start) {
+            scene.remove(startMesh);
+        }
+        if (how) {
+            scene.remove(howMesh);
+        }
+        scene.add(helpMesh);
+    }
+
+    if (playingGame) {
+        if ((ball.position.z < -64) || (Math.abs(ball.velocity.z) < 20) || (ball.position.y < -0.3 && (ball.position.z > 25 || ball.velocity.z < 0))) {
+            //console.log(ball.position.z, ball.velocity.z, ball.position.y);
+            skip = false;
+            pCount++;
+            scene.remove(ballMesh);
+
+            if (ball.position.z < -64) {
+                num++;
+                highScore++;
+            }
+
+            if (pCount >= 20) {
+                menuBool = true;
+                skip = true;
+                playingGame = false;
+                pCount = 0;
+
+                var startShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.51, 0.5));
+                start = new CANNON.Body({ mass: 1  });
+                start.addShape(startShape);
+                start.velocity.set(0,0,0);
+                //start.rotation.z = Math.PI * Math.random()/2 - 0.25;
+                start.velocity.set(0,0,0);
+                start.position.set(0, 2, 20.6);
+                //world.add(start);
+
+                var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
+                var startMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_start_large_trimmed.png') });
+                startMesh = new THREE.Mesh( startGeometry, startMaterial );
+                world.addBody(start);
+                startMesh.position.z = 20;
+                scene.add(startMesh);
+
+
+                var howShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.5, 0.5));
+                how = new CANNON.Body({ mass: 1 });
+                how.addShape(howShape);
+                how.velocity.set(0,0,0);
+                //how.quaternion.setFromAxisAngle(new CANNON.Vec3(0,0,1), Math.PI * Math.random()/2 - 0.25);
+                how.velocity.set(0,0,0);
+                how.position.set(0, 0.5, 20.6);
+                //world.add(how);
+
+                var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
+                var howMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_howto_large.png') });
+                howMesh = new THREE.Mesh( howGeometry, howMaterial );
+                world.addBody(how);
+                howMesh.position.z = 20;
+                scene.add(howMesh);
+
+                num = 0;
+            }
+        }
     }
 }
 
@@ -303,6 +417,10 @@ function onClick( event ) {
         downSwing = true;
     }
 
+    if (howBool) {
+        var delay = true;
+    }
+
     if (menuBool) {
 
         var mouse = new THREE.Vector2();
@@ -312,12 +430,33 @@ function onClick( event ) {
 
         var intersects = raycaster.intersectObject(hudMesh);
 
-        if(intersects.length > 0) {
+
+        if(intersects.length > 0 && mouse.y > -0.32 ) {
+            console.log(mouse.y);
             menuBool = false;
+            playingGame = true;
             start.position.set(0,0,40);
             how.position.set(0,0,40);
         }
+        else {
+            intersects = raycaster.intersectObject(hudMesh);
+            if (intersects.length > 0 && mouse.y < -0.32) {
+                howBool = true;
+                menuBool = false;
+            }
+        }
     }
+
+    /*if (howBool) {
+        menuBool = true;
+        howBool = false;
+    }*/
+
+    if (delay) {
+        menuBool = true;
+        howBool = false;
+    }
+
 }
 
 function onMouseMove( event ) {
@@ -394,10 +533,11 @@ function animate() {
         }
     }
 
-    if (ballMesh.position.z < -64 && ballMesh.position.y > 8) {
-      num = 1;
-      tracker.innerHTML = "Home runs: " + num.toString();
-    }
+    //if (ballMesh.position.z < -64 && ballMesh.position.y > 8) {
+      //num += 1;
+      tracker.innerHTML = "Home Runs: " + num.toString();
+      hScore.innerHTML = "High Score: " + Math.max(num, highScore).toString();
+    //}
 
     render();
 }
@@ -411,20 +551,20 @@ function render() {
     hudMesh.position.y = 0;*/
     //hudMesh.position.y = 0;
 
-    if (!menuBool) {
+    if (1) {
         startGame();
     }
 
 
-    if (menuBool) {
+    /* if (menuBool) {
         startGame();
 
         //hudMesh.position.y = -100;
         /*wallMesh1.position.y = -100 ;
         wallMesh2.position.y = -100 ;
         wallMesh3.position.y = -100 ;
-        hudMesh.position.y = -100;*/
-    }
+        hudMesh.position.y = -100;
+    }*/
 
     renderer.render(scene, camera);
 }
