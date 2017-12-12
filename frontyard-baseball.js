@@ -535,8 +535,9 @@ function animate() {
 
     //if (ballMesh.position.z < -64 && ballMesh.position.y > 8) {
       //num += 1;
+      highScore = Math.max(num, highScore);
       tracker.innerHTML = "Home Runs: " + num.toString();
-      hScore.innerHTML = "High Score: " + Math.max(num, highScore).toString();
+      hScore.innerHTML = "High Score: " + highScore.toString();
     //}
 
     render();
