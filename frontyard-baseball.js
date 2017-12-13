@@ -6,7 +6,7 @@ var raycaster;
 // three.js
 var camera, scene, renderer, loader;
 var batMesh, ballMesh, swinging, doneSwinging, downSwing, canHit, hudMesh, targetMesh;
-var tracker, num = 0, devMesh, menuBool, startMesh, howMesh, skip = false, howBool = false, help, helpMesh;
+var tracker, num = 0, devMesh, menuBool, startMesh, howMesh, skip = false, howBool = false, help, helpMesh, howDiv;
 var playingGame = false, pCount = 0;
 var highScore = 0, hScore;
 
@@ -25,15 +25,22 @@ window.onload = function init() {
     container = document.createElement('div');
     document.body.appendChild(container);
 
+    document.body.setAttribute("style", "font-family: \"Comic Sans MS\";");
+
     tracker = document.createElement('p');
-    tracker.setAttribute("style", "position: absolute; left: 0; top: 0; z-index: 1; font-size: 30pt;");
+    tracker.setAttribute("style", "position: absolute; left: 0; top: 0; z-index: 1; font-size: 25pt; color: #444488; padding-left: 5px");
     tracker.innerHTML = "Home runs: " + num.toString();
     container.appendChild(tracker);
 
     hScore = document.createElement('p');
-    hScore.setAttribute("style", "position: absolute; right: 0; top: -200; z-index: 1; font-size: 30pt;");
+    hScore.setAttribute("style", "position: absolute; right: 0; top: -200; z-index: 1; font-size: 25pt; color: #444488; padding-right: 5px");
     hScore.innerHTML = "High Score: " + highScore.toString();
     container.appendChild(hScore);
+
+    howDiv = document.createElement('div');
+    howDiv.setAttribute("style", "position:absolute; top: 25%; left: 25%; visibility: hidden;");
+    howDiv.innerHTML = "<h1>How To Play:</h1><ul><li>Move mouse to change your bat position</li><li>Click to swing</li><li>You get 20 pitches to hit as many home runs as you can. Good luck!</li></ul>";
+    container.appendChild(howDiv);
 
 
 
@@ -147,19 +154,6 @@ window.onload = function init() {
             ball.velocity.y = (ball.position.y - bat.position.y) * 100;
             ball.velocity.z = Math.cos(Math.PI*(ball.position.x-bat.position.x))*-75;
         }
-
-        if (e.body == start) {
-            //start.velocity.x = (start.position.z - bat.position.z) * 50;
-            //start.velocity.y = (start.position.y - bat.position.y) * 100;
-            //start.velocity.z = Math.cos(Math.PI*(start.position.x-bat.position.x))*-75;
-            //menuBool = false;
-        }
-        if (e.body == how) {
-            //how.velocity.x = (how.position.z - bat.position.z) * 50;
-            //how.velocity.y = (how.position.y - bat.position.y) * 100;
-            //how.velocity.z = Math.cos(Math.PI*(how.position.x-bat.position.x))*-75;
-            //menuBool = false;
-        }
     });
 
 
@@ -178,8 +172,6 @@ window.onload = function init() {
     var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
     var ballMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
     ballMesh = new THREE.Mesh( ballGeometry, ballMaterial );
-    //world.addBody(ball);
-    //scene.add(ballMesh);
 
 
     var hudGeometry = new THREE.BoxGeometry(1, 1, 0.1);
@@ -210,7 +202,6 @@ window.onload = function init() {
     helpMesh = new THREE.Mesh( helpGeometry, helpMaterial );
     helpMesh.position.z = 22.0;
     helpMesh.collisionResponse = 0;
-    //scene.add(helpMesh);
 
 
 
@@ -227,16 +218,13 @@ window.onload = function init() {
     start = new CANNON.Body({ mass: 1  });
     start.addShape(startShape);
     start.velocity.set(0,0,0);
-    //start.rotation.z = Math.PI * Math.random()/2 - 0.25;
     start.velocity.set(0,0,0);
-    start.position.set(0, 2, 20.6);
-    //world.add(start);
+    start.position.set(0, 2, 20);
 
     var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
     var startMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_start_large_trimmed.png') });
     startMesh = new THREE.Mesh( startGeometry, startMaterial );
     world.addBody(start);
-    startMesh.position.z = 20;
     scene.add(startMesh);
 
 
@@ -244,16 +232,13 @@ window.onload = function init() {
     how = new CANNON.Body({ mass: 1 });
     how.addShape(howShape);
     how.velocity.set(0,0,0);
-    //how.quaternion.setFromAxisAngle(new CANNON.Vec3(0,0,1), Math.PI * Math.random()/2 - 0.25);
     how.velocity.set(0,0,0);
-    how.position.set(0, 0.5, 20.6);
-    //world.add(how);
+    how.position.set(0, 0.5, 20);
 
     var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
     var howMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_howto_large.png') });
     howMesh = new THREE.Mesh( howGeometry, howMaterial );
     world.addBody(how);
-    howMesh.position.z = 20;
     scene.add(howMesh);
 
     // create renderer
@@ -291,6 +276,7 @@ function startGame() {
     if (!howBool) {
         if (helpMesh) {
             scene.remove(helpMesh);
+            howDiv.setAttribute("style", "position: absolute; top: 25%; left: 25%; visibility: hidden;");
         }
     }
 
@@ -300,14 +286,12 @@ function startGame() {
     }
 
     if (!skip && !menuBool && !howBool) {
-      world.addBody(ball);
-      scene.add(ballMesh);
 
       if (!menuBool) {
         var ballShape = new CANNON.Sphere(0.075);
         ball = new CANNON.Body({ mass: 0.001 });
         ball.addShape(ballShape);
-        ball.velocity.set(Math.random()/4.0 - 0.125,5 + Math.random()/3.0,22);
+        ball.velocity.set(Math.random()/4.0 - 0.125,5 + Math.random()/3.0,(Math.random()-.5) + 22);
         ball.position.set(0, 3, -10);
 
         // THREE
@@ -330,18 +314,17 @@ function startGame() {
             scene.remove(howMesh);
         }
         scene.add(helpMesh);
+        howDiv.setAttribute("style", "position: absolute; top: 25%; left: 25%; color: #ffffff;");
     }
 
     if (playingGame) {
         if ((ball.position.z < -64) || (Math.abs(ball.velocity.z) < 20) || (ball.position.y < -0.3 && (ball.position.z > 25 || ball.velocity.z < 0))) {
-            //console.log(ball.position.z, ball.velocity.z, ball.position.y);
             skip = false;
             pCount++;
             scene.remove(ballMesh);
 
-            if (ball.position.z < -64) {
+            if (ball.position.z < -64 && ball.position.y > 5.5) {
                 num++;
-                //highScore++;
             }
 
             if (pCount >= 20) {
@@ -350,40 +333,40 @@ function startGame() {
                 playingGame = false;
                 pCount = 0;
 
-                var startShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.51, 0.5));
-                start = new CANNON.Body({ mass: 1  });
-                start.addShape(startShape);
+                if(num > highScore) {
+                    highScore = num;
+                }
+
+                // var startShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.51, 0.5));
+                // start = new CANNON.Body({ mass: 1  });
+                // start.addShape(startShape);
+                // start.velocity.set(0,0,0);
                 start.velocity.set(0,0,0);
-                //start.rotation.z = Math.PI * Math.random()/2 - 0.25;
-                start.velocity.set(0,0,0);
-                start.position.set(0, 2, 20.6);
-                //world.add(start);
+                start.position.set(0, 2, 20);
 
-                var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
-                var startMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_start_large_trimmed.png') });
-                startMesh = new THREE.Mesh( startGeometry, startMaterial );
-                world.addBody(start);
-                startMesh.position.z = 20;
-                scene.add(startMesh);
+                // var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
+                // var startMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_start_large_trimmed.png') });
+                // startMesh = new THREE.Mesh( startGeometry, startMaterial );
+                // world.addBody(start);
+                // startMesh.position.z = 20;
+                // scene.add(startMesh);
 
 
-                var howShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.5, 0.5));
-                how = new CANNON.Body({ mass: 1 });
-                how.addShape(howShape);
+                // var howShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.5, 0.5));
+                // how = new CANNON.Body({ mass: 1 });
+                // how.addShape(howShape);
+                // how.velocity.set(0,0,0);
                 how.velocity.set(0,0,0);
-                //how.quaternion.setFromAxisAngle(new CANNON.Vec3(0,0,1), Math.PI * Math.random()/2 - 0.25);
-                how.velocity.set(0,0,0);
-                how.position.set(0, 0.5, 20.6);
-                //world.add(how);
+                how.position.set(0, 0.5, 20);
 
-                var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
-                var howMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_howto_large.png') });
-                howMesh = new THREE.Mesh( howGeometry, howMaterial );
-                world.addBody(how);
-                howMesh.position.z = 20;
-                scene.add(howMesh);
+                // var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
+                // var howMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_howto_large.png') });
+                // howMesh = new THREE.Mesh( howGeometry, howMaterial );
+                // world.addBody(how);
+                // howMesh.position.z = 20;
+                // scene.add(howMesh);
 
-                num = 0;
+                // num = 0;
             }
         }
     }
@@ -412,7 +395,7 @@ function initCannon() {
 }
 
 function onClick( event ) {
-    if(!swinging && !doneSwinging) {
+    if(!swinging && !doneSwinging && !menuBool && !howBool) {
         swinging = true;
         downSwing = true;
     }
@@ -428,22 +411,20 @@ function onClick( event ) {
         mouse.y = (event.clientY/renderer.domElement.clientHeight)*-2+1;
         raycaster.setFromCamera(mouse,camera);
 
-        var intersects = raycaster.intersectObject(hudMesh);
+        var intersects = raycaster.intersectObject(startMesh);
 
-
-        if(intersects.length > 0 && mouse.y > -0.32 ) {
-            console.log(mouse.y);
+        if(intersects.length > 0) {
             menuBool = false;
             playingGame = true;
             start.position.set(0,0,40);
             how.position.set(0,0,40);
+            num = 0;
         }
-        else {
-            intersects = raycaster.intersectObject(hudMesh);
-            if (intersects.length > 0 && mouse.y < -0.32) {
-                howBool = true;
-                menuBool = false;
-            }
+
+        intersects = raycaster.intersectObject(howMesh);
+        if (intersects.length > 0 && mouse.y < -0.32) {
+            howBool = true;
+            menuBool = false;
         }
     }
 
@@ -509,8 +490,8 @@ function animate() {
                 batMesh.rotation.z += Math.PI * 1.0/30.0;
             }
             batMesh.rotation.y += Math.PI * 1.0/18.0;
-            if(batMesh.rotation.y < Math.PI * 1.0/3.0
-                    && batMesh.rotation.y > Math.PI * -1.0/3.0) {
+            if(batMesh.rotation.y < Math.PI * 5.0/12.0
+                    && batMesh.rotation.y > Math.PI * -5.0/12.0) {
                 canHit = true;
             }
             else {
@@ -552,10 +533,7 @@ function render() {
     hudMesh.position.y = 0;*/
     //hudMesh.position.y = 0;
 
-    if (1) {
-        startGame();
-    }
-
+    startGame();
 
     /* if (menuBool) {
         startGame();
