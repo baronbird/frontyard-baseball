@@ -443,7 +443,7 @@ function onClick( event ) {
 function onMouseMove( event ) {
     var mouse = new THREE.Vector2();
 
-    if(!swinging) {
+    if(!swinging && !menuBool && !howBool) {
         mouse.x = (event.clientX/renderer.domElement.clientWidth)*2-1;
         mouse.y = (event.clientY/renderer.domElement.clientHeight)*-2+1;
         raycaster.setFromCamera(mouse,camera);
