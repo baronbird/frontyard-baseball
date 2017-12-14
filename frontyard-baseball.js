@@ -337,36 +337,11 @@ function startGame() {
                     highScore = num;
                 }
 
-                // var startShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.51, 0.5));
-                // start = new CANNON.Body({ mass: 1  });
-                // start.addShape(startShape);
-                // start.velocity.set(0,0,0);
                 start.velocity.set(0,0,0);
                 start.position.set(0, 2, 20);
 
-                // var startGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
-                // var startMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_start_large_trimmed.png') });
-                // startMesh = new THREE.Mesh( startGeometry, startMaterial );
-                // world.addBody(start);
-                // startMesh.position.z = 20;
-                // scene.add(startMesh);
-
-
-                // var howShape = new CANNON.Box( new CANNON.Vec3(2.04, 0.5, 0.5));
-                // how = new CANNON.Body({ mass: 1 });
-                // how.addShape(howShape);
-                // how.velocity.set(0,0,0);
                 how.velocity.set(0,0,0);
                 how.position.set(0, 0.5, 20);
-
-                // var howGeometry = new THREE.BoxGeometry(2.04, 1, 0.5);
-                // var howMaterial = new THREE.MeshPhongMaterial({ map: loader.load('textures/menuitem_howto_large.png') });
-                // howMesh = new THREE.Mesh( howGeometry, howMaterial );
-                // world.addBody(how);
-                // howMesh.position.z = 20;
-                // scene.add(howMesh);
-
-                // num = 0;
             }
         }
     }
