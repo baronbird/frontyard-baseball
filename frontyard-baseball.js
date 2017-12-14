@@ -148,7 +148,6 @@ window.onload = function init() {
     world.addBody(bat);
 
     bat.addEventListener("collide", function(e) {
-        //console.log(e);
         if (e.body == ball && canHit) {
             ball.velocity.x = (ball.position.z - bat.position.z) * 50;
             ball.velocity.y = (ball.position.y - bat.position.y) * 100;
@@ -287,23 +286,23 @@ function startGame() {
 
     if (!skip && !menuBool && !howBool) {
 
-      if (!menuBool) {
-        var ballShape = new CANNON.Sphere(0.075);
-        ball = new CANNON.Body({ mass: 0.001 });
-        ball.addShape(ballShape);
-        ball.velocity.set(Math.random()/4.0 - 0.125,5 + Math.random()/3.0,(Math.random()-.5) + 22);
-        ball.position.set(0, 3, -10);
+        if (!menuBool) {
+            var ballShape = new CANNON.Sphere(0.075);
+            ball = new CANNON.Body({ mass: 0.001 });
+            ball.addShape(ballShape);
+            ball.velocity.set(Math.random()/4.0 - 0.125,5 + Math.random()/3.0,(Math.random()-.5) + 22);
+            ball.position.set(0, 3, -10);
 
-        // THREE
-        var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
-        var ballMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
-        ballMesh = new THREE.Mesh( ballGeometry, ballMaterial );
-        world.addBody(ball);
-        scene.add(ballMesh);
-      }
+            // THREE
+            var ballGeometry = new THREE.SphereGeometry(ballShape.radius, 32, 32);
+            var ballMaterial = new THREE.MeshPhongMaterial({color: 0xffffff});
+            ballMesh = new THREE.Mesh( ballGeometry, ballMaterial );
+            world.addBody(ball);
+            scene.add(ballMesh);
+        }
 
-      skip = true;
-      playingGame = true;
+        skip = true;
+        playingGame = true;
     }
 
     if (howBool) {
@@ -363,9 +362,9 @@ function initCannon() {
     // create and add a contact material to the world
     var physicsMaterial = new CANNON.Material("slipperyMaterial");
     var physicsContactMaterial = new CANNON.ContactMaterial(physicsMaterial,
-                                                            physicsMaterial,
-                                                            0.0,
-                                                            0.3);
+            physicsMaterial,
+            0.0,
+            0.3);
     world.addContactMaterial(physicsContactMaterial);
 }
 
@@ -404,9 +403,9 @@ function onClick( event ) {
     }
 
     /*if (howBool) {
-        menuBool = true;
-        howBool = false;
-    }*/
+      menuBool = true;
+      howBool = false;
+      }*/
 
     if (delay) {
         menuBool = true;
@@ -489,12 +488,9 @@ function animate() {
         }
     }
 
-    //if (ballMesh.position.z < -64 && ballMesh.position.y > 8) {
-      //num += 1;
-      highScore = Math.max(num, highScore);
-      tracker.innerHTML = "Home Runs: " + num.toString();
-      hScore.innerHTML = "High Score: " + highScore.toString();
-    //}
+    highScore = Math.max(num, highScore);
+    tracker.innerHTML = "Home Runs: " + num.toString();
+    hScore.innerHTML = "High Score: " + highScore.toString();
 
     render();
 }
@@ -502,23 +498,7 @@ function animate() {
 function render() {
     camera.lookAt(scene.position);
 
-    /*wallMesh1.position.y = 0 ;
-    wallMesh2.position.y = 0 ;
-    wallMesh3.position.y = 0 ;
-    hudMesh.position.y = 0;*/
-    //hudMesh.position.y = 0;
-
     startGame();
-
-    /* if (menuBool) {
-        startGame();
-
-        //hudMesh.position.y = -100;
-        /*wallMesh1.position.y = -100 ;
-        wallMesh2.position.y = -100 ;
-        wallMesh3.position.y = -100 ;
-        hudMesh.position.y = -100;
-    }*/
 
     renderer.render(scene, camera);
 }
